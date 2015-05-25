@@ -2,6 +2,32 @@
 
 Hyperinstall is a program that runs `npm install` in parallel in multiple directories. Most companies have several npm packages in a project. Whenever you update your local copy of the code, you need to run `npm install` in case any of these packages has different dependencies since the last time you ran `npm install`. Hyperinstall automates and accelerates this with one command.
 
+#### Hyperinstall parallelizes `npm install`
+
+```
+$ ./npm-hyperinstall
+Package "a" has been updated; installing...
+...
+Finished installing "a"
+
+Package "b" has been updated; installing...
+...
+Finished installing "b"
+
+Updated 2 packages:
+  a
+  b
+```
+
+#### Hyperinstall is efficient when your dependencies haven't changed
+```
+$ time ./npm-hyperinstall
+
+real  0m0.232s
+user  0m0.206s
+sys   0m0.032s
+```
+
 ## Installation
 
 The only prerequisite is io.js 1.0 or newer. The best way to install io.js is with [nvm](https://github.com/creationix/nvm).

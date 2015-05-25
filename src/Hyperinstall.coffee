@@ -43,7 +43,8 @@ class Hyperinstall
       yield _.map packages, (cacheBreaker, name) =>
         updatePackageAsync = co.wrap =>
           deps = yield @readPackageDepsAsync name
-          return @updatePackageAsync name, cacheBreaker, deps
+          unversionedDepChecksums = yield @readUnversionedDepChecksumsAsync name, deps
+          return @updatePackageAsync name, cacheBreaker, deps, unversionedDepChecksums
         updatePackageAsync()
     else
       yield _.map packages, (cacheBreaker, name) =>
