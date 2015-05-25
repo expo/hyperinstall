@@ -33,7 +33,7 @@ function removeHyperinstallScriptAsync(root) {
 }
 
 if (module === require.main) {
-  var argv = require('yargs')
+  var yargs = require('yargs')
     .usage('Usage: $0 <command> [options]')
     .help('help')
     .version(function() {
@@ -77,7 +77,7 @@ if (module === require.main) {
           .argv;
       }
     )
-    .argv;
+  var argv = yargs.argv;
 
   co(function* () {
     var command = argv._[0];
@@ -108,6 +108,8 @@ if (module === require.main) {
         hyperinstall.cleanAsync(),
         removeHyperinstallScriptAsync(root),
       ]);
+    } else if (!command) {
+      console.log(yargs.help());
     } else {
       console.error('Unknown command:', command);
       process.exit(1);
