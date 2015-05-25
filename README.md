@@ -1,5 +1,7 @@
 # Hyperinstall
 
+[![npm package](https://nodei.co/npm/hyperinstall.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/hyperinstall/)
+
 Hyperinstall is a program that runs `npm install` in parallel in multiple directories. Most companies have several npm packages in a project. Whenever you update your local copy of the code, you need to run `npm install` in case any of these packages has different dependencies since the last time you ran `npm install`. Hyperinstall automates and accelerates this with one command.
 
 #### Hyperinstall parallelizes `npm install`
