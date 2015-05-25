@@ -1,0 +1,36 @@
+{
+  "name": "hyperinstall",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Runs \"npm install\" in several directories and remembers their state across hyperinstalls",
+  "main": "lib/Hyperinstall.js",
+  "bin": {
+    "hyperinstall": "bin/cli.js"
+  },
+  "preferGlobal": true,
+  "author": "James Ide",
+  "license": "MIT",
+  "engines": {
+    "node": ">=1.0"
+  },
+  "dependencies": {
+    "await-lock": "^1.1.0",
+    "co": "^4.5.4",
+    "digest-stream": "^0.2.2",
+    "fstream-npm": "^1.0.2",
+    "instapromise": "^1.0.0",
+    "lodash-node": "^3.9.2",
+    "minimist": "^1.1.1",
+    "npm-package-arg": "^4.0.1",
+    "rimraf": "^2.3.4",
+    "stream-to-promise": "^1.0.4",
+    "yargs": "^3.9.1"
+  },
+  "devDependencies": {
+    "gulp": "^3.8.11",
+    "gulp-changed": "^1.2.1",
+    "gulp-coffee": "^2.3.1",
+    "gulp-insert": "^0.4.0",
+    "gulp-util": "^3.0.4"
+  }
+}
