@@ -1,17 +1,25 @@
 {
   "name": "hyperinstall",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Runs \"npm install\" in several directories and remembers their state across hyperinstalls",
   "main": "lib/Hyperinstall.js",
   "bin": {
     "hyperinstall": "bin/cli.js"
   },
   "preferGlobal": true,
-  "author": "James Ide",
-  "license": "MIT",
   "engines": {
     "node": ">=1.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/exponentjs/hyperinstall.git"
+  },
+  "author": "James Ide",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/exponentjs/hyperinstall/issues"
+  },
+  "homepage": "https://github.com/exponentjs/hyperinstall#readme",
   "dependencies": {
     "await-lock": "^1.1.0",
     "co": "^4.5.4",
