@@ -4,7 +4,8 @@ Hyperinstall is a program that runs `npm install` in parallel in multiple direct
 
 ## Installation
 
-0. The only prerequisite is io.js 1.0 or newer. The best way to install io.js is with [nvm](https://github.com/creationix/nvm).
+The only prerequisite is io.js 1.0 or newer. The best way to install io.js is with [nvm](https://github.com/creationix/nvm).
+
 1. Install Hyperinstall globally: `npm install -g hyperinstall`. Now the `hyperinstall` command is in your path. Everyone on your team must do this.
 2. Run `hyperinstall init` in the root directory of your project, or wherever your project scripts are stored. Make sure this is a directory that is under version control and is shared with your teammates. Hyperinstall creates two files: hyperinstall.json and npm-hyperinstall.
 3. **hyperinstall.json** is a configuration file containing a JSON object.
