@@ -18,6 +18,10 @@ function createHyperinstallScriptAsync(root) {
 
     ROOT=$(cd "$(dirname "\${BASH_SOURCE[0]}")" && pwd)
     cd $ROOT
+    command -v hyperinstall >/dev/null 2>&1 || {
+      echo >&2 "Hyperinstall is not in your PATH; run \"npm install -g hyperinstall\"";
+      exit 1;
+    }
     hyperinstall install $@
   `.replace(/^ +/gm, '').trimLeft();
   var filename = path.join(root, SCRIPT_FILE);
