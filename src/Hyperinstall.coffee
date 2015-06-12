@@ -4,7 +4,6 @@ _ = require 'lodash-node'
 childProcess = require 'child_process'
 co = require 'co'
 crypto = require 'crypto'
-digestStream = require 'digest-stream'
 fs = require 'fs'
 fstreamNpm = require 'fstream-npm'
 npmPackageArg = require 'npm-package-arg'
@@ -139,7 +138,6 @@ class Hyperinstall
     promises = {}
     for dep, depPath of unversionedDeps
       absoluteDepPath = path.resolve packagePath, depPath
-      console.log absoluteDepPath
       promises[dep] = @readPackageChecksumAsync absoluteDepPath
     return yield promises
 
@@ -185,12 +183,17 @@ class Hyperinstall
           return hashStream.digest 'hex'
 
   readFileChecksumAsync: (filePath, algorithm) ->
-    return new Promise (resolve, reject) ->
-      fs.createReadStream filePath
-        .on 'error', reject
-        .pipe digestStream algorithm, 'hex', (digest) ->
-          resolve digest
-        .on 'error', reject
+    contents = yield fs.promise.readFile filePath
+    hashStream = crypto.createHash algorithm
+    hashStream.update contents
+    hashStream.digest 'hex'
+
+    # return new Promise (resolve, reject) ->
+    #   fs.createReadStream filePath
+    #     .on 'error', reject
+    #     .pipe digestStream algorithm, 'hex', (digest) ->
+    #       resolve digest
+    #     .on 'error', reject
 
   packageNeedsUpdate: (name, cacheBreaker, deps, unversionedDepChecksums) ->
     packageState = @state.packages?[name]

@@ -37,6 +37,7 @@ function removeHyperinstallScriptAsync(root) {
 }
 
 if (module === require.main) {
+  let argv;
   let yargs = require('yargs')
     .usage('Usage: $0 <command> [options]')
     .help('help')
@@ -80,8 +81,8 @@ if (module === require.main) {
           .usage('Usage: $0 clean [directory]')
           .argv;
       }
-    )
-  let argv = yargs.argv;
+    );
+  argv = yargs.argv;
 
   co(function*() {
     let command = argv._[0];

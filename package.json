@@ -23,7 +23,6 @@
   "dependencies": {
     "await-lock": "^1.1.1",
     "co": "^4.5.4",
-    "digest-stream": "^0.2.2",
     "fstream-npm": "^1.0.2",
     "instapromise": "^1.0.0",
     "lodash-node": "^3.9.3",
