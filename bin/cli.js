@@ -2,16 +2,16 @@
 
 'use strict';
 
-var Hyperinstall = require('../lib/Hyperinstall');
+let Hyperinstall = require('../lib/Hyperinstall');
 
-var co = require('co');
-var fs = require('fs');
-var path = require('path');
+let co = require('co');
+let fs = require('fs');
+let path = require('path');
 
-var SCRIPT_FILE = 'npm-hyperinstall';
+const SCRIPT_FILE = 'npm-hyperinstall';
 
 function createHyperinstallScriptAsync(root) {
-  var script = `
+  let script = `
     #!/bin/bash
 
     set -e
@@ -24,7 +24,7 @@ function createHyperinstallScriptAsync(root) {
     }
     hyperinstall install $@
   `.replace(/^ +/gm, '').trimLeft();
-  var filename = path.join(root, SCRIPT_FILE);
+  let filename = path.join(root, SCRIPT_FILE);
   return fs.promise.writeFile(filename, script, {
     encoding: 'utf8',
     mode: 0o755,
@@ -32,12 +32,12 @@ function createHyperinstallScriptAsync(root) {
 }
 
 function removeHyperinstallScriptAsync(root) {
-  var filename = path.join(root, SCRIPT_FILE);
+  let filename = path.join(root, SCRIPT_FILE);
   return fs.promise.unlink(filename);
 }
 
 if (module === require.main) {
-  var yargs = require('yargs')
+  let yargs = require('yargs')
     .usage('Usage: $0 <command> [options]')
     .help('help')
     .version(function() {
@@ -81,13 +81,13 @@ if (module === require.main) {
           .argv;
       }
     )
-  var argv = yargs.argv;
+  let argv = yargs.argv;
 
-  co(function* () {
-    var command = argv._[0];
+  co(function*() {
+    let command = argv._[0];
     if (command === 'init') {
-      var root = argv._[1] || process.cwd();
-      var hyperinstall = new Hyperinstall(root);
+      let root = argv._[1] || process.cwd();
+      let hyperinstall = new Hyperinstall(root);
 
       try {
         yield fs.promise.mkdir(root);
@@ -102,12 +102,12 @@ if (module === require.main) {
         createHyperinstallScriptAsync(root),
       ]);
     } else if (command === 'install') {
-      var hyperinstall = new Hyperinstall(process.cwd());
+      let hyperinstall = new Hyperinstall(process.cwd());
       hyperinstall.forceInstallation = argv.force;
       yield hyperinstall.installAsync();
     } else if (command === 'clean') {
-      var root = argv._[1] || process.cwd();
-      var hyperinstall = new Hyperinstall(root);
+      let root = argv._[1] || process.cwd();
+      let hyperinstall = new Hyperinstall(root);
       yield Promise.all([
         hyperinstall.cleanAsync(),
         removeHyperinstallScriptAsync(root),
