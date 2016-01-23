@@ -1,6 +1,6 @@
 {
   "name": "hyperinstall",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Runs \"npm install\" in several directories and remembers their state across hyperinstalls",
   "main": "lib/Hyperinstall.js",
   "bin": {
