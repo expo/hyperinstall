@@ -41,14 +41,12 @@ if (module === require.main) {
   let yargs = require('yargs')
     .usage('Usage: $0 <command> [options]')
     .help('help')
-    .version(function() {
-      return require('../package.json').version;
-    })
+    .version(() => require('../package.json').version)
     .command(
       'init',
       'Creates a new Hyperinstall script in the current directory (or an ' +
         'optionally specified directory)',
-      function(yargs) {
+      (yargs) => {
         argv = yargs
           .help('help')
           .usage('Usage: $0 init [directory]')
@@ -59,7 +57,7 @@ if (module === require.main) {
       'install',
       'Runs "npm install" in each directory specified in hyperinstall.json ' +
         'if the packages have changed since the last time Hyperinstall ran',
-      function(yargs) {
+      (yargs) => {
         argv = yargs
           .help('help')
           .usage('Usage: $0 install')
@@ -75,7 +73,7 @@ if (module === require.main) {
     .command(
       'clean',
       'Removes the Hyperinstall script and .hyperinstall-state.json file',
-      function(yargs) {
+      (yargs) => {
         argv = yargs
           .help('help')
           .usage('Usage: $0 clean [directory]')
@@ -119,7 +117,7 @@ if (module === require.main) {
       console.error('Unknown command:', command);
       process.exit(1);
     }
-  }).catch(function(err) {
+  }).catch((err) => {
     console.error('Uncaught ' + err.stack);
   });
 }
