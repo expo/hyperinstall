@@ -1,6 +1,6 @@
 require 'instapromise'
 
-_ = require 'lodash-node'
+_ = require 'lodash'
 childProcess = require 'child_process'
 co = require 'co'
 crypto = require 'crypto'
