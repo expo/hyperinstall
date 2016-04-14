@@ -41,48 +41,36 @@ if (module === require.main) {
   let yargs = require('yargs')
     .usage('Usage: $0 <command> [options]')
     .help('help')
-    .version(() => require('../package.json').version)
+    .version()
     .command(
       'init',
       'Creates a new Hyperinstall script in the current directory (or an ' +
         'optionally specified directory)',
-      (yargs) => {
-        argv = yargs
-          .help('help')
-          .usage('Usage: $0 init [directory]')
-          .argv;
-      }
+      (yargs) => yargs
+        .usage('Usage: $0 init [directory]')
     )
     .command(
       'install',
       'Runs "npm install" in each directory specified in hyperinstall.json ' +
         'if the packages have changed since the last time Hyperinstall ran',
-      (yargs) => {
-        argv = yargs
-          .help('help')
-          .usage('Usage: $0 install')
-          .option('f', {
-            alias: 'force',
-            describe: 'Force all packages to be installed by first removing ' +
-              'all "node_modules" directories',
-            type: 'boolean',
-          })
-          .argv;
-      }
+      (yargs) => yargs
+        .usage('Usage: $0 install')
+        .option('f', {
+          alias: 'force',
+          describe: 'Force all packages to be installed by first removing ' +
+            'all "node_modules" directories',
+          type: 'boolean',
+        })
     )
     .command(
       'clean',
       'Removes the Hyperinstall script and .hyperinstall-state.json file',
-      (yargs) => {
-        argv = yargs
-          .help('help')
-          .usage('Usage: $0 clean [directory]')
-          .argv;
-      }
+      (yargs) => yargs
+        .usage('Usage: $0 clean [directory]')
     );
   argv = yargs.argv;
 
-  co(function*() {
+  co(function* () {
     let command = argv._[0];
     if (command === 'init') {
       let root = argv._[1] || process.cwd();
@@ -112,7 +100,7 @@ if (module === require.main) {
         removeHyperinstallScriptAsync(root),
       ]);
     } else if (!command) {
-      console.log(yargs.help());
+      yargs.showHelp();
     } else {
       console.error('Unknown command:', command);
       process.exit(1);

@@ -1,6 +1,6 @@
 {
   "name": "hyperinstall",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Runs \"npm install\" in several directories and remembers their state across hyperinstalls",
   "main": "lib/Hyperinstall.js",
   "bin": {
@@ -33,7 +33,7 @@
     "minimist": "^1.2.0",
     "npm-package-arg": "^4.1.0",
     "rimraf": "^2.5.2",
-    "yargs": "^3.32.0"
+    "yargs": "^4.6.0"
   },
   "devDependencies": {
     "babel-cli": "^6.7.5",
