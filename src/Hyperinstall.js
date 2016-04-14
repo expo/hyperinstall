@@ -2,7 +2,6 @@ import 'instapromise';
 
 import AwaitLock from 'await-lock';
 
-import childProcess from 'child_process';
 import crypto from 'crypto';
 import fs from 'fs';
 import fstreamNpm from 'fstream-npm';
@@ -15,8 +14,9 @@ import toPairsIn from 'lodash/toPairsIn';
 import npmPackageArg from 'npm-package-arg';
 import path from 'path';
 import rimraf from 'rimraf';
-import util from 'util';
 import promiseProps from '@exponent/promise-props';
+
+import { execNpmInstallAsync } from './npm';
 
 const STATE_FILE = '.hyperinstall-state.json';
 const CONFIG_FILE = 'hyperinstall.json';
@@ -47,9 +47,8 @@ export default class Hyperinstall {
 
     if (state.cacheBreaker !== CACHE_BREAKER) {
       await Promise.all(map(packages, async (cacheBreaker, name) => {
-        let deps = await this.readPackageDepsAsync(name);
-        let unversionedDepChecksums = await this.readUnversionedDepChecksumsAsync(name, deps);
-        await this.updatePackageAsync(name, cacheBreaker, deps, unversionedDepChecksums);
+        let packageInstallationState = this.readPackageInstallationState(name);
+        await this.updatePackageAsync(name, cacheBreaker, packageInstallationState);
       }));
     } else {
       await Promise.all(map(packages, async (cacheBreaker, name) => {
@@ -93,7 +92,7 @@ export default class Hyperinstall {
   }
 
   async writeInstallationStateAsync(state) {
-    let contents = JSON.stringify(state);
+    let contents = JSON.stringify(state, null, 2);
     let filename = path.join(this.root, STATE_FILE);
     await fs.promise.writeFile(filename, contents, 'utf8');
   }
@@ -113,32 +112,43 @@ export default class Hyperinstall {
     return JSON.parse(contents);
   }
 
-  async updatePackageIfNeededAsync(name, cacheBreaker) {
-    let deps = await this.readPackageDepsAsync(name);
+  async readPackageInstallationState(name) {
+    let [deps, shrinkwrap] = await Promise.all([
+      this.readPackageDepsAsync(name),
+      this.readShrinkwrapAsync(name),
+    ]);
     let unversionedDepChecksums = await this.readUnversionedDepChecksumsAsync(name, deps);
+    return {
+      dependencies: deps,
+      unversionedDependencyChecksums: unversionedDepChecksums,
+      shrinkwrap,
+    };
+  }
+
+  async updatePackageIfNeededAsync(name, cacheBreaker) {
+    let packageInstallationState = await this.readPackageInstallationState(name);
     if (this.forceInstallation) {
       await this.removeNodeModulesDirAsync(name);
-      await this.updatePackageAsync(name, cacheBreaker, deps, unversionedDepChecksums);
-    } else if (this.packageNeedsUpdate(name, cacheBreaker, deps, unversionedDepChecksums)) {
-      await this.updatePackageAsync(name, cacheBreaker, deps, unversionedDepChecksums);
+      await this.updatePackageAsync(name, cacheBreaker, packageInstallationState);
+    } else if (this.packageNeedsUpdate(name, cacheBreaker, packageInstallationState)) {
+      await this.updatePackageAsync(name, cacheBreaker, packageInstallationState);
     }
   }
 
-  async updatePackageAsync(name, cacheBreaker, deps, unversionedDepChecksums) {
+  async updatePackageAsync(name, cacheBreaker, packageInstallationState) {
     let packagePath = path.resolve(this.root, name);
     await this.installLock.acquireAsync();
     console.log('Package "%s" has been updated; installing...', name);
     try {
-      await this.execNpmInstallAsync(packagePath);
+      await execNpmInstallAsync(packagePath);
       console.log('Finished installing "%s"\n', name);
     } finally {
       this.installLock.release();
     }
 
     this.updatedPackages[name] = {
+      ...packageInstallationState,
       cacheBreaker,
-      dependencies: deps,
-      unversionedDependencyChecksums: unversionedDepChecksums,
     };
   }
 
@@ -146,6 +156,20 @@ export default class Hyperinstall {
     let nodeModulesPath = path.resolve(this.root, name, 'node_modules');
     await rimraf.promise(nodeModulesPath);
     console.log('Removed node_modules for "%s"\n', name);
+  }
+
+  async readShrinkwrapAsync(name) {
+    let shrinkwrapJSONPath = path.resolve(this.root, name, 'npm-shrinkwrap.json');
+    let shrinkwrapJSON;
+    try {
+      shrinkwrapJSON = await fs.promise.readFile(shrinkwrapJSONPath, 'utf8');
+    } catch (e) {
+      if (e.code === 'ENOENT') {
+        return undefined;
+      }
+      throw e;
+    }
+    return JSON.parse(shrinkwrapJSON);
   }
 
   async readPackageDepsAsync(name) {
@@ -227,9 +251,14 @@ export default class Hyperinstall {
     return hashStream.digest('hex');
   }
 
-  packageNeedsUpdate(name, cacheBreaker, deps, unversionedDepChecksums) {
+  packageNeedsUpdate(name, cacheBreaker, deps, unversionedDepChecksums, shrinkwrap) {
     let packageState = get(this.state.packages, name);
     if (!packageState || packageState.cacheBreaker !== cacheBreaker) {
+      return true;
+    }
+
+    let installedShrinkwrap = packageState.shrinkwrap;
+    if (shrinkwrap && isEqual(shrinkwrap, installedShrinkwrap)) {
       return true;
     }
 
@@ -240,42 +269,6 @@ export default class Hyperinstall {
 
     let installedUnversionedDepChecksums = packageState.unversionedDependencyChecksums;
     return !isEqual(unversionedDepChecksums, installedUnversionedDepChecksums);
-  }
-
-  execNpmInstallAsync(packagePath) {
-    return new Promise((resolve, reject) => {
-      this.execNpmInstall(packagePath, (error, code) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(code);
-        }
-      });
-    });
-  }
-
-  execNpmInstall(packagePath, callback) {
-    let child = childProcess.spawn('npm', ['install'], {
-      cwd: packagePath,
-      stdio: 'inherit',
-    });
-
-    child.on('error', (error) => {
-      child.removeAllListeners();
-      callback(error);
-    });
-
-    child.on('exit', (code, signal) => {
-      child.removeAllListeners();
-      let error;
-      if (code) {
-        let message = util.format('npm install failed in %s', packagePath);
-        error = new Error(message);
-        error.errno = code;
-        error.code = signal;
-      }
-      callback(error, code);
-    });
   }
 
   async cleanAsync() {
