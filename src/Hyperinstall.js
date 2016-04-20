@@ -46,9 +46,10 @@ export default class Hyperinstall {
     this.state = state;
 
     if (state.cacheBreaker !== CACHE_BREAKER) {
+      console.log('Global cache breaker has been updated; installing all packages');
       await Promise.all(map(packages, async (cacheBreaker, name) => {
-        let packageInstallationState = this.readPackageInstallationState(name);
-        await this.updatePackageAsync(name, cacheBreaker, packageInstallationState);
+        let targetPackageState = this.readTargetPackageStateAsync(name);
+        await this.updatePackageAsync(name, cacheBreaker, targetPackageState);
       }));
     } else {
       await Promise.all(map(packages, async (cacheBreaker, name) => {
@@ -112,7 +113,7 @@ export default class Hyperinstall {
     return JSON.parse(contents);
   }
 
-  async readPackageInstallationState(name) {
+  async readTargetPackageStateAsync(name) {
     let [deps, shrinkwrap] = await Promise.all([
       this.readPackageDepsAsync(name),
       this.readShrinkwrapAsync(name),
@@ -126,16 +127,16 @@ export default class Hyperinstall {
   }
 
   async updatePackageIfNeededAsync(name, cacheBreaker) {
-    let packageInstallationState = await this.readPackageInstallationState(name);
+    let targetPackageState = await this.readTargetPackageStateAsync(name);
     if (this.forceInstallation) {
       await this.removeNodeModulesDirAsync(name);
-      await this.updatePackageAsync(name, cacheBreaker, packageInstallationState);
-    } else if (this.packageNeedsUpdate(name, cacheBreaker, packageInstallationState)) {
-      await this.updatePackageAsync(name, cacheBreaker, packageInstallationState);
+      await this.updatePackageAsync(name, cacheBreaker, targetPackageState);
+    } else if (this.packageNeedsUpdate(name, cacheBreaker, targetPackageState)) {
+      await this.updatePackageAsync(name, cacheBreaker, targetPackageState);
     }
   }
 
-  async updatePackageAsync(name, cacheBreaker, packageInstallationState) {
+  async updatePackageAsync(name, cacheBreaker, targetPackageState) {
     let packagePath = path.resolve(this.root, name);
     await this.installLock.acquireAsync();
     console.log('Package "%s" has been updated; installing...', name);
@@ -147,7 +148,7 @@ export default class Hyperinstall {
     }
 
     this.updatedPackages[name] = {
-      ...packageInstallationState,
+      ...targetPackageState,
       cacheBreaker,
     };
   }
@@ -251,24 +252,27 @@ export default class Hyperinstall {
     return hashStream.digest('hex');
   }
 
-  packageNeedsUpdate(name, cacheBreaker, deps, unversionedDepChecksums, shrinkwrap) {
+  packageNeedsUpdate(name, cacheBreaker, targetPackageState) {
     let packageState = get(this.state.packages, name);
     if (!packageState || packageState.cacheBreaker !== cacheBreaker) {
       return true;
     }
 
+    let targetShrinkwrap = targetPackageState.shrinkwrap;
     let installedShrinkwrap = packageState.shrinkwrap;
-    if (shrinkwrap && isEqual(shrinkwrap, installedShrinkwrap)) {
+    if (targetShrinkwrap && isEqual(targetShrinkwrap, installedShrinkwrap)) {
       return true;
     }
 
+    let targetDeps = targetPackageState.dependencies;
     let installedDeps = packageState.dependencies;
-    if (!isEqual(deps, installedDeps)) {
+    if (!isEqual(targetDeps, installedDeps)) {
       return true;
     }
 
+    let targetUnversionedDepChecksums = targetPackageState.unversionedDependencyChecksums;
     let installedUnversionedDepChecksums = packageState.unversionedDependencyChecksums;
-    return !isEqual(unversionedDepChecksums, installedUnversionedDepChecksums);
+    return !isEqual(targetUnversionedDepChecksums, installedUnversionedDepChecksums);
   }
 
   async cleanAsync() {
