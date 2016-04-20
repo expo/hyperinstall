@@ -260,7 +260,7 @@ export default class Hyperinstall {
 
     let targetShrinkwrap = targetPackageState.shrinkwrap;
     let installedShrinkwrap = packageState.shrinkwrap;
-    if (targetShrinkwrap && isEqual(targetShrinkwrap, installedShrinkwrap)) {
+    if (targetShrinkwrap && !isEqual(targetShrinkwrap, installedShrinkwrap)) {
       return true;
     }
 
