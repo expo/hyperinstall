@@ -131,8 +131,15 @@ export default class Hyperinstall {
     if (this.forceInstallation) {
       await this.removeNodeModulesDirAsync(name);
       await this.updatePackageAsync(name, cacheBreaker, targetPackageState);
-    } else if (this.packageNeedsUpdate(name, cacheBreaker, targetPackageState)) {
-      await this.updatePackageAsync(name, cacheBreaker, targetPackageState);
+    } else {
+      let needsUpdate = await this.packageNeedsUpdateAsync(
+        name,
+        cacheBreaker,
+        targetPackageState
+      );
+      if (needsUpdate) {
+        await this.updatePackageAsync(name, cacheBreaker, targetPackageState);
+      }
     }
   }
 
@@ -252,7 +259,7 @@ export default class Hyperinstall {
     return hashStream.digest('hex');
   }
 
-  packageNeedsUpdate(name, cacheBreaker, targetPackageState) {
+  async packageNeedsUpdateAsync(name, cacheBreaker, targetPackageState) {
     let packageState = get(this.state.packages, name);
     if (!packageState || packageState.cacheBreaker !== cacheBreaker) {
       return true;
@@ -272,11 +279,36 @@ export default class Hyperinstall {
 
     let targetUnversionedDepChecksums = targetPackageState.unversionedDependencyChecksums;
     let installedUnversionedDepChecksums = packageState.unversionedDependencyChecksums;
-    return !isEqual(targetUnversionedDepChecksums, installedUnversionedDepChecksums);
+    if (!isEqual(targetUnversionedDepChecksums, installedUnversionedDepChecksums)) {
+      return true;
+    }
+
+    // If there are dependencies but node_modules is missing, we definitely need
+    // to update the package
+    if (!isEmpty(installedDeps)) {
+      let nodeModulesPath = path.resolve(this.root, name, 'node_modules');
+      let isNodeModulesPresent = await this.isDirectoryAsync(nodeModulesPath);
+      return !isNodeModulesPresent;
+    }
+
+    return false;
   }
 
   async cleanAsync() {
     let stateFilename = path.join(this.root, STATE_FILE);
     await fs.promise.unlink(stateFilename);
+  }
+
+  async isDirectoryAsync(directoryPath) {
+    let stat;
+    try {
+      stat = await fs.promise.stat(directoryPath);
+    } catch (e) {
+      if (e.code === 'ENOENT') {
+        return false;
+      }
+      throw e;
+    }
+    return stat.isDirectory();
   }
 }
