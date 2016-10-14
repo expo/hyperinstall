@@ -37,7 +37,7 @@
     "await-lock": "^1.1.1",
     "co": "^4.6.0",
     "fstream-npm": "^1.2.0",
-    "instapromise": "^2.0.5",
+    "instapromise": "latest",
     "lodash": "^4.16.4",
     "minimist": "^1.2.0",
     "npm-package-arg": "^4.2.0",
