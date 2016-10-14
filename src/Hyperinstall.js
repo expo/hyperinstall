@@ -291,38 +291,35 @@ export default class Hyperinstall {
     }
 
     let targetYarnLockfile = targetPackageState.yarnLockfile;
-    let installedYarnLockfile = packageState.yarnLockfile;
     if (targetYarnLockfile) {
-      return !isEqual(targetYarnLockfile, installedYarnLockfile);
+      let installedYarnLockfile = packageState.yarnLockfile;
+      if (!isEqual(targetYarnLockfile, installedYarnLockfile)) {
+        return true;
+      }
+    } else {
+      let targetShrinkwrap = targetPackageState.shrinkwrap;
+      let installedShrinkwrap = packageState.shrinkwrap;
+      if (targetShrinkwrap && !isEqual(targetShrinkwrap, installedShrinkwrap)) {
+        return true;
+      }
+
+      let targetDeps = targetPackageState.dependencies;
+      let installedDeps = packageState.dependencies;
+      if (!isEqual(targetDeps, installedDeps)) {
+        return true;
+      }
+
+      let targetUnversionedDepChecksums = targetPackageState.unversionedDependencyChecksums;
+      let installedUnversionedDepChecksums = packageState.unversionedDependencyChecksums;
+      if (!isEqual(targetUnversionedDepChecksums, installedUnversionedDepChecksums)) {
+        return true;
+      }
     }
 
-    let targetShrinkwrap = targetPackageState.shrinkwrap;
-    let installedShrinkwrap = packageState.shrinkwrap;
-    if (targetShrinkwrap && !isEqual(targetShrinkwrap, installedShrinkwrap)) {
-      return true;
-    }
-
-    let targetDeps = targetPackageState.dependencies;
-    let installedDeps = packageState.dependencies;
-    if (!isEqual(targetDeps, installedDeps)) {
-      return true;
-    }
-
-    let targetUnversionedDepChecksums = targetPackageState.unversionedDependencyChecksums;
-    let installedUnversionedDepChecksums = packageState.unversionedDependencyChecksums;
-    if (!isEqual(targetUnversionedDepChecksums, installedUnversionedDepChecksums)) {
-      return true;
-    }
-
-    // If there are dependencies but node_modules is missing, we definitely need
-    // to update the package
-    if (!isEmpty(installedDeps)) {
-      let nodeModulesPath = path.resolve(this.root, name, 'node_modules');
-      let isNodeModulesPresent = await this.isDirectoryAsync(nodeModulesPath);
-      return !isNodeModulesPresent;
-    }
-
-    return false;
+    // If node_modules is missing, we definitely need to update the package
+    let nodeModulesPath = path.resolve(this.root, name, 'node_modules');
+    let isNodeModulesPresent = await this.isDirectoryAsync(nodeModulesPath);
+    return !isNodeModulesPresent;
   }
 
   async cleanAsync() {
