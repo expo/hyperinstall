@@ -2,9 +2,9 @@
 
 [![npm package](https://nodei.co/npm/hyperinstall.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/hyperinstall/)
 
-Hyperinstall is a program that runs `npm install` in parallel in multiple directories. Most companies have several npm packages in a project. Whenever you update your local copy of the code, you need to run `npm install` in case any of these packages has different dependencies since the last time you ran `npm install`. Hyperinstall automates and accelerates this with one command.
+Hyperinstall is a program that runs `yarn` or `npm install` in multiple directories. Most companies have several npm packages in a project. Whenever you update your local copy of the code, you need to run `npm install` in case any of these packages has different dependencies since the last time you ran `npm install`. Hyperinstall automates and accelerates this with one command.
 
-#### Hyperinstall parallelizes `npm install`
+#### Hyperinstall automatically runs `yarn` and `npm install`
 
 ```
 $ ./npm-hyperinstall
@@ -32,7 +32,7 @@ sys   0m0.032s
 
 ## Installation
 
-The only prerequisite is io.js 1.0 or newer. The best way to install io.js is with [nvm](https://github.com/creationix/nvm).
+The only prerequisite is Node.js 4.0 or newer. The best way to install Node.js is with [nvm](https://github.com/creationix/nvm).
 
 1. Install Hyperinstall globally: `npm install -g hyperinstall`. Now the `hyperinstall` command is in your path. Everyone on your team must do this.
 2. Run `hyperinstall init` in the root directory of your project, or wherever your project scripts are stored. Make sure this is a directory that is under version control and is shared with your teammates. Hyperinstall creates two files: hyperinstall.json and npm-hyperinstall.
@@ -63,13 +63,13 @@ The only prerequisite is io.js 1.0 or newer. The best way to install io.js is wi
       }
       ```
 
-4. **npm-hyperinstall** is a script that runs `npm install` in each of your npm packages and can be run from anywhere. It is a shortcut for `cd your/project/root && hyperinstall install`.
+4. **npm-hyperinstall** is a script that runs `yarn` or `npm install` in each of your npm packages and can be run from anywhere. It is a shortcut for `cd your/project/root && hyperinstall install`.
 5. Add `/.hyperinstall-state.json` to your .gitignore file. This file is created by npm-hyperinstall and records the dependencies that are installed in each npm package.
 6. After testing Hyperinstall (see the Usage section), commit hyperinstall.json, npm-hyperinstall, and .gitignore to your repository.
 
 ## Usage
 
-Run npm-hyperinstall. It will run `npm install` in each of your npm packages and create a file called `.hyperinstall-state.json` that records the dependencies that were installed.
+Run npm-hyperinstall. It will run `yarn` or `npm install` in each of your npm packages and create a file called `.hyperinstall-state.json` that records the dependencies that were installed.
 
 The next time you run npm-hyperinstall, it will check if any of the packages' dependencies have changed since the last time you ran Hyperinstall. It will run `npm install` in each package with different dependencies. When the dependencies haven't changed at all, Hyperinstall is very fast and exits quickly.
 
@@ -79,4 +79,4 @@ To locally force Hyperinstall to reinstall all of your npm packages, run it with
 
 ## Contributions
 
-Contributions are welcome. We're most interested in improving the workflow so feedback in that vein is especially interesting to us. Also bug fixes are appreciated. We might be more selective with diffs that add a fair bit of complexity since we generally want Hyperinstall to be a simple script on top of `npm install`.
+Contributions are welcome. We're most interested in improving the workflow so feedback in that vein is especially interesting to us. Also bug fixes are appreciated. We might be more selective with diffs that add a fair bit of complexity since we generally want Hyperinstall to be a simple script on top of `yarn` and `npm install`.
