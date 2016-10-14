@@ -6,6 +6,13 @@
   "bin": {
     "hyperinstall": "bin/cli.js"
   },
+  "files": [
+    "lib",
+    "bin",
+    "LICENSE",
+    "README.md",
+    "package.json"
+  ],
   "preferGlobal": true,
   "engines": {
     "node": ">=6"
