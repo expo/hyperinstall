@@ -17,6 +17,7 @@ import rimraf from 'rimraf';
 import promiseProps from '@exponent/promise-props';
 
 import { execNpmInstallAsync } from './npm';
+import { execYarnInstallAsync } from './yarn';
 
 const STATE_FILE = '.hyperinstall-state.json';
 const CONFIG_FILE = 'hyperinstall.json';
@@ -114,10 +115,16 @@ export default class Hyperinstall {
   }
 
   async readTargetPackageStateAsync(name) {
-    let [deps, shrinkwrap] = await Promise.all([
+    let [deps, yarnLockfile, shrinkwrap] = await Promise.all([
       this.readPackageDepsAsync(name),
+      this.readYarnLockfileAsync(name),
       this.readShrinkwrapAsync(name),
     ]);
+
+    if (yarnLockfile) {
+      return { yarnLockfile };
+    }
+
     let unversionedDepChecksums = await this.readUnversionedDepChecksumsAsync(name, deps);
     return {
       dependencies: deps,
@@ -135,7 +142,7 @@ export default class Hyperinstall {
       let needsUpdate = await this.packageNeedsUpdateAsync(
         name,
         cacheBreaker,
-        targetPackageState
+        targetPackageState,
       );
       if (needsUpdate) {
         await this.updatePackageAsync(name, cacheBreaker, targetPackageState);
@@ -146,9 +153,13 @@ export default class Hyperinstall {
   async updatePackageAsync(name, cacheBreaker, targetPackageState) {
     let packagePath = path.resolve(this.root, name);
     await this.installLock.acquireAsync();
-    console.log('Package "%s" has been updated; installing...', name);
     try {
-      await execNpmInstallAsync(packagePath);
+      console.log('Package "%s" has been updated; installing...', name);
+      if (targetPackageState.yarnLockfile) {
+        await execYarnInstallAsync(packagePath);
+      } else {
+        await execNpmInstallAsync(packagePath);
+      }
       console.log('Finished installing "%s"\n', name);
     } finally {
       this.installLock.release();
@@ -164,6 +175,20 @@ export default class Hyperinstall {
     let nodeModulesPath = path.resolve(this.root, name, 'node_modules');
     await rimraf.promise(nodeModulesPath);
     console.log('Removed node_modules for "%s"\n', name);
+  }
+
+  async readYarnLockfileAsync(name) {
+    let lockfilePath = path.resolve(this.root, name, 'yarn.lock');
+    let lockfile;
+    try {
+      lockfile = await fs.promise.readFile(lockfilePath, 'utf8');
+    } catch (e) {
+      if (e.code === 'ENOENT') {
+        return undefined;
+      }
+      throw e;
+    }
+    return lockfile;
   }
 
   async readShrinkwrapAsync(name) {
@@ -263,6 +288,12 @@ export default class Hyperinstall {
     let packageState = get(this.state.packages, name);
     if (!packageState || packageState.cacheBreaker !== cacheBreaker) {
       return true;
+    }
+
+    let targetYarnLockfile = targetPackageState.yarnLockfile;
+    let installedYarnLockfile = packageState.yarnLockfile;
+    if (targetYarnLockfile) {
+      return !isEqual(targetYarnLockfile, installedYarnLockfile);
     }
 
     let targetShrinkwrap = targetPackageState.shrinkwrap;
