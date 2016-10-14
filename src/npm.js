@@ -1,5 +1,5 @@
 import { execAsync } from './exec';
 
-export function execYarnInstallAsync(packagePath) {
+export function execNpmInstallAsync(packagePath) {
   return execAsync('npm', ['install'], { cwd: packagePath, stdio: 'inherit' });
 }
