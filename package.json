@@ -29,12 +29,12 @@
     "await-lock": "^1.1.1",
     "co": "^4.6.0",
     "fstream-npm": "^1.2.0",
-    "instapromise": "^2.0.4",
+    "instapromise": "^2.0.5",
     "lodash": "^4.16.4",
     "minimist": "^1.2.0",
     "npm-package-arg": "^4.2.0",
     "rimraf": "^2.5.4",
-    "yargs": "^4.7.1"
+    "yargs": "^6.0.0"
   },
   "devDependencies": {
     "babel-cli": "^6.16.0",
