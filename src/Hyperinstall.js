@@ -49,7 +49,7 @@ export default class Hyperinstall {
     if (state.cacheBreaker !== CACHE_BREAKER) {
       console.log('Global cache breaker has been updated; installing all packages');
       await Promise.all(map(packages, async (cacheBreaker, name) => {
-        let targetPackageState = this.readTargetPackageStateAsync(name);
+        let targetPackageState = await this.readTargetPackageStateAsync(name);
         await this.updatePackageAsync(name, cacheBreaker, targetPackageState);
       }));
     } else {
