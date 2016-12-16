@@ -57,8 +57,12 @@ if (module === require.main) {
         .usage('Usage: $0 install')
         .option('f', {
           alias: 'force',
-          describe: 'Force all packages to be installed by first removing ' +
-            'all "node_modules" directories',
+          describe: 'Force all packages to be npm installed',
+          type: 'boolean',
+        })
+        .option('c', {
+          alias: 'clean',
+          describe: 'Force removal of all packages node_modules directories',
           type: 'boolean',
         })
     )
@@ -91,6 +95,7 @@ if (module === require.main) {
     } else if (command === 'install') {
       let hyperinstall = new Hyperinstall(process.cwd());
       hyperinstall.forceInstallation = argv.force;
+      hyperinstall.forceClean = argv.clean;
       yield hyperinstall.installAsync();
     } else if (command === 'clean') {
       let root = argv._[1] || process.cwd();

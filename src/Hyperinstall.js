@@ -28,6 +28,7 @@ const CACHE_BREAKER = 0;
 export default class Hyperinstall {
   constructor(root) {
     this.root = root;
+    this.forceClean = false;
     this.forceInstallation = false;
     this.state = {};
     this.updatedPackages = {};
@@ -135,8 +136,10 @@ export default class Hyperinstall {
 
   async updatePackageIfNeededAsync(name, cacheBreaker) {
     let targetPackageState = await this.readTargetPackageStateAsync(name);
-    if (this.forceInstallation) {
+    if (this.forceClean) {
       await this.removeNodeModulesDirAsync(name);
+    }
+    if (this.forceInstallation) {
       await this.updatePackageAsync(name, cacheBreaker, targetPackageState);
     } else {
       let needsUpdate = await this.packageNeedsUpdateAsync(
