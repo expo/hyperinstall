@@ -24,14 +24,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/exponentjs/hyperinstall.git"
+    "url": "git+https://github.com/exponent/hyperinstall.git"
   },
   "author": "James Ide",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/exponentjs/hyperinstall/issues"
+    "url": "https://github.com/exponent/hyperinstall/issues"
   },
-  "homepage": "https://github.com/exponentjs/hyperinstall#readme",
+  "homepage": "https://github.com/exponent/hyperinstall#readme",
   "dependencies": {
     "@exponent/promise-props": "^1.0.0",
     "await-lock": "^1.1.1",
