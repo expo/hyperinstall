@@ -16,7 +16,7 @@ export function execAsync(command, args, options) {
 export function exec(command, args, options, callback) {
   let child = childProcess.spawn(command, args, options);
 
-  child.on('error', (error) => {
+  child.on('error', error => {
     child.removeAllListeners();
     callback(error);
   });
@@ -28,7 +28,7 @@ export function exec(command, args, options, callback) {
       let message = util.format(
         '%s failed%s',
         [command, ...args].join(' '),
-        options.cwd ? ` in ${options.cwd}` : '',
+        options.cwd ? ` in ${options.cwd}` : ''
       );
       error = new Error(message);
       error.errno = code;

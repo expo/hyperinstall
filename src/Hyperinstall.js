@@ -48,21 +48,27 @@ export default class Hyperinstall {
     this.state = state;
 
     if (state.cacheBreaker !== CACHE_BREAKER) {
-      console.log('Global cache breaker has been updated; installing all packages');
-      await Promise.all(map(packages, async (cacheBreaker, name) => {
-        let targetPackageState = await this.readTargetPackageStateAsync(name);
-        await this.updatePackageAsync(name, cacheBreaker, targetPackageState);
-      }));
+      console.log(
+        'Global cache breaker has been updated; installing all packages'
+      );
+      await Promise.all(
+        map(packages, async (cacheBreaker, name) => {
+          let targetPackageState = await this.readTargetPackageStateAsync(name);
+          await this.updatePackageAsync(name, cacheBreaker, targetPackageState);
+        })
+      );
     } else {
-      await Promise.all(map(packages, async (cacheBreaker, name) => {
-        await this.updatePackageIfNeededAsync(name, cacheBreaker);
-      }));
+      await Promise.all(
+        map(packages, async (cacheBreaker, name) => {
+          await this.updatePackageIfNeededAsync(name, cacheBreaker);
+        })
+      );
     }
 
     if (!isEmpty(this.updatedPackages)) {
       let packageNames = Object.keys(this.updatedPackages);
       let count = packageNames.length;
-      let packageWord = (count === 1) ? 'package' : 'packages';
+      let packageWord = count === 1 ? 'package' : 'packages';
       console.log('Updated %d %s:', count, packageWord);
       for (let name of packageNames) {
         console.log('  %s', name);
@@ -126,7 +132,10 @@ export default class Hyperinstall {
       return { yarnLockfile };
     }
 
-    let unversionedDepChecksums = await this.readUnversionedDepChecksumsAsync(name, deps);
+    let unversionedDepChecksums = await this.readUnversionedDepChecksumsAsync(
+      name,
+      deps
+    );
     return {
       dependencies: deps,
       unversionedDependencyChecksums: unversionedDepChecksums,
@@ -145,7 +154,7 @@ export default class Hyperinstall {
       let needsUpdate = await this.packageNeedsUpdateAsync(
         name,
         cacheBreaker,
-        targetPackageState,
+        targetPackageState
       );
       if (needsUpdate) {
         await this.updatePackageAsync(name, cacheBreaker, targetPackageState);
@@ -195,7 +204,11 @@ export default class Hyperinstall {
   }
 
   async readShrinkwrapAsync(name) {
-    let shrinkwrapJSONPath = path.resolve(this.root, name, 'npm-shrinkwrap.json');
+    let shrinkwrapJSONPath = path.resolve(
+      this.root,
+      name,
+      'npm-shrinkwrap.json'
+    );
     let shrinkwrapJSON;
     try {
       shrinkwrapJSON = await fs.promise.readFile(shrinkwrapJSONPath, 'utf8');
@@ -256,13 +269,16 @@ export default class Hyperinstall {
       let fileChecksumPromises = {};
       let fileListStream = fstreamNpm({ path: packagePath });
 
-      fileListStream.on('child', (entry) => {
+      fileListStream.on('child', entry => {
         let absoluteFilePath = entry.props.path;
         let relativeFilePath = path.relative(packagePath, absoluteFilePath);
-        fileChecksumPromises[relativeFilePath] = this.readFileChecksumAsync(absoluteFilePath, 'sha1');
+        fileChecksumPromises[relativeFilePath] = this.readFileChecksumAsync(
+          absoluteFilePath,
+          'sha1'
+        );
       });
 
-      fileListStream.on('error', (error) => {
+      fileListStream.on('error', error => {
         fileListStream.removeAllListeners();
         reject(error);
       });
@@ -312,9 +328,16 @@ export default class Hyperinstall {
         return true;
       }
 
-      let targetUnversionedDepChecksums = targetPackageState.unversionedDependencyChecksums;
-      let installedUnversionedDepChecksums = packageState.unversionedDependencyChecksums;
-      if (!isEqual(targetUnversionedDepChecksums, installedUnversionedDepChecksums)) {
+      let targetUnversionedDepChecksums =
+        targetPackageState.unversionedDependencyChecksums;
+      let installedUnversionedDepChecksums =
+        packageState.unversionedDependencyChecksums;
+      if (
+        !isEqual(
+          targetUnversionedDepChecksums,
+          installedUnversionedDepChecksums
+        )
+      ) {
         return true;
       }
     }

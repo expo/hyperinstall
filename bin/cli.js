@@ -23,7 +23,9 @@ function createHyperinstallScriptAsync(root) {
       exit 1;
     }
     hyperinstall install $@
-  `.replace(/^ +/gm, '').trimLeft();
+  `
+    .replace(/^ +/gm, '')
+    .trimLeft();
   let filename = path.join(root, SCRIPT_FILE);
   return fs.promise.writeFile(filename, script, {
     encoding: 'utf8',
@@ -46,35 +48,34 @@ if (module === require.main) {
       'init',
       'Creates a new Hyperinstall script in the current directory (or an ' +
         'optionally specified directory)',
-      (yargs) => yargs
-        .usage('Usage: $0 init [directory]')
+      yargs => yargs.usage('Usage: $0 init [directory]')
     )
     .command(
       'install',
       'Runs "npm install" in each directory specified in hyperinstall.json ' +
         'if the packages have changed since the last time Hyperinstall ran',
-      (yargs) => yargs
-        .usage('Usage: $0 install')
-        .option('f', {
-          alias: 'force',
-          describe: 'Force all packages to be npm installed',
-          type: 'boolean',
-        })
-        .option('c', {
-          alias: 'clean',
-          describe: 'Force removal of all packages node_modules directories',
-          type: 'boolean',
-        })
+      yargs =>
+        yargs
+          .usage('Usage: $0 install')
+          .option('f', {
+            alias: 'force',
+            describe: 'Force all packages to be npm installed',
+            type: 'boolean',
+          })
+          .option('c', {
+            alias: 'clean',
+            describe: 'Force removal of all packages node_modules directories',
+            type: 'boolean',
+          })
     )
     .command(
       'clean',
       'Removes the Hyperinstall script and .hyperinstall-state.json file',
-      (yargs) => yargs
-        .usage('Usage: $0 clean [directory]')
+      yargs => yargs.usage('Usage: $0 clean [directory]')
     );
   argv = yargs.argv;
 
-  co(function* () {
+  co(function*() {
     let command = argv._[0];
     if (command === 'init') {
       let root = argv._[1] || process.cwd();
@@ -110,7 +111,7 @@ if (module === require.main) {
       console.error('Unknown command:', command);
       process.exit(1);
     }
-  }).catch((err) => {
+  }).catch(err => {
     console.error('Uncaught ' + err.stack);
   });
 }
