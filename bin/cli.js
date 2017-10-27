@@ -68,10 +68,8 @@ if (module === require.main) {
             type: 'boolean',
           })
     )
-    .command(
-      'clean',
-      'Removes the Hyperinstall script and .hyperinstall-state.json file',
-      yargs => yargs.usage('Usage: $0 clean [directory]')
+    .command('clean', 'Removes the Hyperinstall script and .hyperinstall-state.json file', yargs =>
+      yargs.usage('Usage: $0 clean [directory]')
     );
   argv = yargs.argv;
 
@@ -101,10 +99,7 @@ if (module === require.main) {
     } else if (command === 'clean') {
       let root = argv._[1] || process.cwd();
       let hyperinstall = new Hyperinstall(root);
-      yield Promise.all([
-        hyperinstall.cleanAsync(),
-        removeHyperinstallScriptAsync(root),
-      ]);
+      yield Promise.all([hyperinstall.cleanAsync(), removeHyperinstallScriptAsync(root)]);
     } else if (!command) {
       yargs.showHelp();
     } else {
