@@ -12,7 +12,7 @@ const SCRIPT_FILE = 'npm-hyperinstall';
 
 function createHyperinstallScriptAsync(root) {
   let script = `
-    #!/bin/bash
+    #!/usr/bin/env bash
 
     set -e
 
