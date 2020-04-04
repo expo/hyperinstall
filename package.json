@@ -39,7 +39,7 @@
     "fstream-npm": "^1.2.0",
     "instapromise": "latest",
     "lodash": "^4.17.13",
-    "minimist": "^1.2.2",
+    "minimist": "^1.2.3",
     "npm-package-arg": "^4.2.0",
     "rimraf": "^2.5.4",
     "yargs": "^6.0.0"
