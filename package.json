@@ -15,7 +15,7 @@
   ],
   "preferGlobal": true,
   "engines": {
-    "node": ">=6"
+    "node": ">=16 <=16"
   },
   "scripts": {
     "prepublish": "npm run build",
@@ -45,13 +45,11 @@
     "yargs": "^6.0.0"
   },
   "devDependencies": {
-    "babel-cli": "^6.16.0",
-    "babel-eslint": "^7.0.0",
-    "babel-plugin-add-module-exports": "^0.2.1",
-    "babel-preset-es2015-node6": "^0.3.0",
-    "babel-preset-stage-2": "^6.17.0",
-    "eslint": "^4.18.2",
-    "eslint-config-exponent": "^4.0.0",
-    "eslint-plugin-babel": "^3.3.0"
+    "@babel/cli": "^7.17.6",
+    "@babel/core": "^7.17.8",
+    "@babel/preset-env": "^7.16.11",
+    "eslint": "^8.12.0",
+    "eslint-config-universe": "^10.0.0",
+    "prettier": "^2.6.1"
   }
 }

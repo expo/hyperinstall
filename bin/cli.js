@@ -2,7 +2,7 @@
 
 'use strict';
 
-let Hyperinstall = require('../lib/Hyperinstall');
+let Hyperinstall = require('../lib/Hyperinstall').default;
 
 let co = require('co');
 let fs = require('fs');
