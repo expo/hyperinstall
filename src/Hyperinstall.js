@@ -1,23 +1,11 @@
-import 'instapromise';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 
-import AwaitLock from 'await-lock';
-
-import crypto from 'crypto';
-import fs from 'fs';
-import fstreamNpm from 'fstream-npm';
-import get from 'lodash/get';
-import isEmpty from 'lodash/isEmpty';
-import isEqual from 'lodash/isEqual';
-import map from 'lodash/map';
-import sortBy from 'lodash/sortBy';
-import toPairsIn from 'lodash/toPairsIn';
-import npmPackageArg from 'npm-package-arg';
-import path from 'path';
-import rimraf from 'rimraf';
-import promiseProps from '@exponent/promise-props';
-
-import { execNpmInstallAsync } from './npm';
-import { execYarnInstallAsync } from './yarn';
+import Lock from './Lock.js';
+import { readPackageChecksumAsync } from './checksum.js';
+import { execNpmInstallAsync, execYarnInstallAsync } from './exec.js';
+import { filterLocalDeps } from './localDeps.js';
 
 const STATE_FILE = '.hyperinstall-state.json';
 const CONFIG_FILE = 'hyperinstall.json';
@@ -32,12 +20,12 @@ export default class Hyperinstall {
     this.forceInstallation = false;
     this.state = {};
     this.updatedPackages = {};
-    this.installLock = new AwaitLock();
+    this.installLock = new Lock();
   }
 
   createPackageListAsync() {
     let filename = path.join(this.root, CONFIG_FILE);
-    return fs.promise.writeFile(filename, '{\n}\n');
+    return fs.writeFile(filename, '{\n}\n');
   }
 
   async installAsync() {
@@ -47,24 +35,25 @@ export default class Hyperinstall {
     ]);
     this.state = state;
 
+    let packageEntries = Object.entries(packages);
     if (state.cacheBreaker !== CACHE_BREAKER) {
       console.log('Global cache breaker has been updated; installing all packages');
       await Promise.all(
-        map(packages, async (cacheBreaker, name) => {
+        packageEntries.map(async ([name, cacheBreaker]) => {
           let targetPackageState = await this.readTargetPackageStateAsync(name);
           await this.updatePackageAsync(name, cacheBreaker, targetPackageState);
         })
       );
     } else {
       await Promise.all(
-        map(packages, async (cacheBreaker, name) => {
+        packageEntries.map(async ([name, cacheBreaker]) => {
           await this.updatePackageIfNeededAsync(name, cacheBreaker);
         })
       );
     }
 
-    if (!isEmpty(this.updatedPackages)) {
-      let packageNames = Object.keys(this.updatedPackages);
+    let packageNames = Object.keys(this.updatedPackages);
+    if (packageNames.length) {
       let count = packageNames.length;
       let packageWord = count === 1 ? 'package' : 'packages';
       console.log('Updated %d %s:', count, packageWord);
@@ -75,9 +64,9 @@ export default class Hyperinstall {
 
     // Update the installation state
     state.cacheBreaker = CACHE_BREAKER;
-    state.packages = Object.assign({}, state.packages, this.updatedPackages);
+    state.packages = { ...state.packages, ...this.updatedPackages };
     for (let name of Object.keys(state.packages)) {
-      if (!packages.hasOwnProperty(name)) {
+      if (!Object.hasOwn(packages, name)) {
         delete state.packages[name];
       }
     }
@@ -88,7 +77,7 @@ export default class Hyperinstall {
     let filename = path.join(this.root, STATE_FILE);
     let contents;
     try {
-      contents = await fs.promise.readFile(filename, 'utf8');
+      contents = await fs.readFile(filename, 'utf8');
     } catch (e) {
       if (e.code === 'ENOENT') {
         return {};
@@ -101,14 +90,14 @@ export default class Hyperinstall {
   async writeInstallationStateAsync(state) {
     let contents = JSON.stringify(state, null, 2);
     let filename = path.join(this.root, STATE_FILE);
-    await fs.promise.writeFile(filename, contents, 'utf8');
+    await fs.writeFile(filename, contents, 'utf8');
   }
 
   async readPackageListAsync() {
     let filename = path.join(this.root, CONFIG_FILE);
     let contents;
     try {
-      contents = await fs.promise.readFile(filename, 'utf8');
+      contents = await fs.readFile(filename, 'utf8');
     } catch (e) {
       if (e.code === 'ENOENT') {
         console.warn(`Specify the packages to install in ${CONFIG_FILE}.`);
@@ -158,11 +147,7 @@ export default class Hyperinstall {
     await this.installLock.acquireAsync();
     try {
       console.log('Package "%s" has been updated; installing...', name);
-      if (targetPackageState.yarnLockfile) {
-        await execYarnInstallAsync(packagePath);
-      } else {
-        await execNpmInstallAsync(packagePath);
-      }
+      await this.execInstallAsync(packagePath, Boolean(targetPackageState.yarnLockfile));
       console.log('Finished installing "%s"\n', name);
     } finally {
       this.installLock.release();
@@ -174,9 +159,18 @@ export default class Hyperinstall {
     };
   }
 
+  /** Overridable seam: runs the package manager in `packagePath`. */
+  async execInstallAsync(packagePath, useYarn) {
+    if (useYarn) {
+      await execYarnInstallAsync(packagePath);
+    } else {
+      await execNpmInstallAsync(packagePath);
+    }
+  }
+
   async removeNodeModulesDirAsync(name) {
     let nodeModulesPath = path.resolve(this.root, name, 'node_modules');
-    await rimraf.promise(nodeModulesPath);
+    await fs.rm(nodeModulesPath, { recursive: true, force: true });
     console.log('Removed node_modules for "%s"\n', name);
   }
 
@@ -184,7 +178,7 @@ export default class Hyperinstall {
     let lockfilePath = path.resolve(this.root, name, 'yarn.lock');
     let lockfile;
     try {
-      lockfile = await fs.promise.readFile(lockfilePath, 'utf8');
+      lockfile = await fs.readFile(lockfilePath, 'utf8');
     } catch (e) {
       if (e.code === 'ENOENT') {
         return undefined;
@@ -198,7 +192,7 @@ export default class Hyperinstall {
     let shrinkwrapJSONPath = path.resolve(this.root, name, 'npm-shrinkwrap.json');
     let shrinkwrapJSON;
     try {
-      shrinkwrapJSON = await fs.promise.readFile(shrinkwrapJSONPath, 'utf8');
+      shrinkwrapJSON = await fs.readFile(shrinkwrapJSONPath, 'utf8');
     } catch (e) {
       if (e.code === 'ENOENT') {
         return undefined;
@@ -210,88 +204,24 @@ export default class Hyperinstall {
 
   async readPackageDepsAsync(name) {
     let packageJSONPath = path.resolve(this.root, name, 'package.json');
-    let packageJSON = await fs.promise.readFile(packageJSONPath, 'utf8');
-    packageJSON = JSON.parse(packageJSON);
-
-    let packageDeps = {};
-    Object.assign(packageDeps, packageJSON.dependencies);
-    Object.assign(packageDeps, packageJSON.devDependencies);
-    return packageDeps;
+    let packageJSON = JSON.parse(await fs.readFile(packageJSONPath, 'utf8'));
+    return { ...packageJSON.dependencies, ...packageJSON.devDependencies };
   }
 
   async readUnversionedDepChecksumsAsync(name, deps) {
     let packagePath = path.resolve(this.root, name);
-    let unversionedDeps = this.filterLocalDeps(name, deps);
-    let promises = {};
-    for (let [dep, depPath] of toPairsIn(unversionedDeps)) {
-      let absoluteDepPath = path.resolve(packagePath, depPath);
-      promises[dep] = this.readPackageChecksumAsync(absoluteDepPath);
-    }
-    return await promiseProps(promises);
-  }
-
-  filterLocalDeps(name, deps) {
-    // Change the working directory since npm-package-arg uses it when calling
-    // path.resolve
-    let originalCwd = process.cwd();
-    let packagePath = path.resolve(this.root, name);
-    process.chdir(packagePath);
-
-    let localDeps = {};
-    try {
-      for (let [dep, version] of toPairsIn(deps)) {
-        let descriptor = npmPackageArg(`${dep}@${version}`);
-        if (descriptor.type === 'local') {
-          localDeps[dep] = descriptor.spec;
-        }
-      }
-    } finally {
-      process.chdir(originalCwd);
-    }
-    return localDeps;
-  }
-
-  async readPackageChecksumAsync(packagePath) {
-    return new Promise((resolve, reject) => {
-      let fileChecksumPromises = {};
-      let fileListStream = fstreamNpm({ path: packagePath });
-
-      fileListStream.on('child', entry => {
-        let absoluteFilePath = entry.props.path;
-        let relativeFilePath = path.relative(packagePath, absoluteFilePath);
-        fileChecksumPromises[relativeFilePath] = this.readFileChecksumAsync(
-          absoluteFilePath,
-          'sha1'
-        );
-      });
-
-      fileListStream.on('error', error => {
-        fileListStream.removeAllListeners();
-        reject(error);
-      });
-
-      fileListStream.on('end', async () => {
-        fileListStream.removeAllListeners();
-        let fileChecksums = await promiseProps(fileChecksumPromises);
-        // Compute a stable hash of the hashes
-        let hashStream = crypto.createHash('sha1');
-        for (let checksum of sortBy(fileChecksums)) {
-          hashStream.update(checksum, 'utf8');
-        }
-        resolve(hashStream.digest('hex'));
-      });
-    });
-  }
-
-  async readFileChecksumAsync(filePath, algorithm) {
-    let contents = await fs.promise.readFile(filePath);
-    let hashStream = crypto.createHash(algorithm);
-    hashStream.update(contents);
-    return hashStream.digest('hex');
+    let localDeps = filterLocalDeps(deps);
+    let checksums = await Promise.all(
+      Object.entries(localDeps).map(async ([dep, depPath]) => {
+        let absoluteDepPath = path.resolve(packagePath, depPath);
+        return [dep, await readPackageChecksumAsync(absoluteDepPath)];
+      })
+    );
+    return Object.fromEntries(checksums);
   }
 
   async packageNeedsUpdateAsync(name, cacheBreaker, targetPackageState) {
-    let packageState = get(this.state.packages, name);
+    let packageState = this.state.packages?.[name];
     if (!packageState || packageState.cacheBreaker !== cacheBreaker) {
       return true;
     }
@@ -299,25 +229,25 @@ export default class Hyperinstall {
     let targetYarnLockfile = targetPackageState.yarnLockfile;
     if (targetYarnLockfile) {
       let installedYarnLockfile = packageState.yarnLockfile;
-      if (!isEqual(targetYarnLockfile, installedYarnLockfile)) {
+      if (targetYarnLockfile !== installedYarnLockfile) {
         return true;
       }
     } else {
       let targetShrinkwrap = targetPackageState.shrinkwrap;
       let installedShrinkwrap = packageState.shrinkwrap;
-      if (targetShrinkwrap && !isEqual(targetShrinkwrap, installedShrinkwrap)) {
+      if (targetShrinkwrap && !isDeepStrictEqual(targetShrinkwrap, installedShrinkwrap)) {
         return true;
       }
 
       let targetDeps = targetPackageState.dependencies;
       let installedDeps = packageState.dependencies;
-      if (!isEqual(targetDeps, installedDeps)) {
+      if (!isDeepStrictEqual(targetDeps, installedDeps)) {
         return true;
       }
 
       let targetUnversionedDepChecksums = targetPackageState.unversionedDependencyChecksums;
       let installedUnversionedDepChecksums = packageState.unversionedDependencyChecksums;
-      if (!isEqual(targetUnversionedDepChecksums, installedUnversionedDepChecksums)) {
+      if (!isDeepStrictEqual(targetUnversionedDepChecksums, installedUnversionedDepChecksums)) {
         return true;
       }
     }
@@ -330,13 +260,13 @@ export default class Hyperinstall {
 
   async cleanAsync() {
     let stateFilename = path.join(this.root, STATE_FILE);
-    await fs.promise.unlink(stateFilename);
+    await fs.rm(stateFilename, { force: true });
   }
 
   async isDirectoryAsync(directoryPath) {
     let stat;
     try {
-      stat = await fs.promise.stat(directoryPath);
+      stat = await fs.stat(directoryPath);
     } catch (e) {
       if (e.code === 'ENOENT') {
         return false;
