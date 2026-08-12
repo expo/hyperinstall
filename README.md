@@ -32,7 +32,7 @@ sys   0m0.032s
 
 ## Installation
 
-The only prerequisite is Node.js 4.0 or newer. The best way to install Node.js is with [nvm](https://github.com/creationix/nvm).
+The only prerequisite is Node.js 24 or newer. The best way to install Node.js is with [nvm](https://github.com/nvm-sh/nvm).
 
 1. Install Hyperinstall globally: `npm install -g hyperinstall`. Now the `hyperinstall` command is in your path. Everyone on your team must do this.
 2. Run `hyperinstall init` in the root directory of your project, or wherever your project scripts are stored. Make sure this is a directory that is under version control and is shared with your teammates. Hyperinstall creates two files: hyperinstall.json and npm-hyperinstall.
@@ -75,7 +75,23 @@ The next time you run npm-hyperinstall, it will check if any of the packages' de
 
 ### Options
 
-To locally force Hyperinstall to reinstall all of your npm packages, run it with `-f` (short for `--force`). Hyperinstall will first delete each package's node_modules directory before running `npm install` in each one.
+To locally force Hyperinstall to reinstall all of your npm packages, run it with `-f` (short for `--force`).
+
+To also delete each package's node_modules directory before installing, run it with `-c` (short for `--clean`).
+
+Run `hyperinstall --help` for the full usage.
+
+## Development
+
+Hyperinstall is written as plain ES modules that run directly on Node; there is no build step. After `yarn install`:
+
+```
+yarn test     # node --test
+yarn lint     # eslint
+yarn format   # prettier --check
+```
+
+Hyperinstall itself has no runtime dependencies.
 
 ## Contributions
 
